@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate clap;
 
-use std::io::{BufReader, BufRead, ErrorKind};
+use std::io::{ErrorKind, Read};
 use clap::Clap;
 use serialport::SerialPortInfo;
 use std::io::{stdin, stdout, Write};
@@ -12,7 +12,7 @@ use std::io::{stdin, stdout, Write};
 #[derive(Clap)]
 #[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
 struct Opts {
-    #[clap(short, long, default_value = "3_000_000")]
+    #[clap(short, long, default_value = "3000000")]
     baudrate: usize,
 
     #[clap(short, long)]
@@ -50,7 +50,7 @@ fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
         print!("Choose: ");
         let _ = stdout().flush();
         match stdin().read_line(&mut s) {
-            Ok(n) => {}
+            Ok(_n) => {}
             Err(e) => {
                 eprintln!("Error ({})", e);
                 continue;
@@ -76,7 +76,6 @@ fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
 
 fn main() {
     let opts: Opts = Opts::parse();
-    eprintln!("Value for config: {}", opts.baudrate);
 
     let ports = match serialport::available_ports() {
         Ok(ports) => ports,
@@ -93,29 +92,28 @@ fn main() {
 
     println!("Device: {}", device);
 
-    let port = match serialport::new(&device, opts.baudrate as u32)
+    let mut port = match serialport::new(&device, opts.baudrate as u32)
         .timeout(std::time::Duration::from_secs_f32(2.0))
         .open() {
         Ok(p) => p,
         Err(_e) => return
     };
 
-    let mut reader = BufReader::new(port);
-    let mut buf = String::with_capacity(128);
-
+    let mut buf = [0u8; 1024];
     loop {
-        buf.clear();
-
         // Check for errors
-        if let Err(e) = reader.read_line(&mut buf) {
-            match e.kind() {
-                ErrorKind::InvalidData => continue,
-                kind => {
-                    eprintln!("can not read ({:?} - {})", kind, e);
-                    return;
+        let n = match port.read(&mut buf) {
+            Ok(n) => n,
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::InvalidData | ErrorKind::TimedOut => continue,
+                    kind => {
+                        eprintln!("can not read ({:?} - {})", kind, e);
+                        return;
+                    }
                 }
             }
-        }
-        print!("{}", &buf);
+        };
+        print!("{}", std::str::from_utf8(&buf[..n]).unwrap_or(""));
     }
 }
