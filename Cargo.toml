@@ -3,10 +3,10 @@ name = "ucom"
 version = "0.1.0"
 authors = ["sander <sander.wittwer@dengineering.no>"]
 edition = "2018"
+description = "A serial terminal written in rust."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 serialport = "4.0.1"
-
 clap = "3.0.0-beta.2"
