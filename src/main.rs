@@ -36,18 +36,18 @@ fn port_info(port: &SerialPortInfo) -> Option<String> {
 fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
     let mut s = String::new();
     loop {
-        println!("Select device:");
+        eprintln!("Select device:");
         for (i, port) in ports.iter().enumerate() {
             let info = match port_info(&port) {
                 Some(info) => info,
                 None => continue
             };
 
-            println!("({}) {}", i, info);
+            eprintln!("({}) {}", i, info);
         }
         s.clear();
 
-        print!("Choose: ");
+        eprint!("Choose: ");
         let _ = stdout().flush();
         match stdin().read_line(&mut s) {
             Ok(_n) => {}
@@ -90,7 +90,7 @@ fn main() {
         None => device_prompt(&ports)
     };
 
-    println!("Device: {}", device);
+    eprintln!("Device: {}", device);
 
     let mut port = match serialport::new(&device, opts.baudrate as u32)
         .timeout(std::time::Duration::from_secs_f32(2.0))
@@ -100,6 +100,7 @@ fn main() {
     };
 
     let mut buf = [0u8; 1024];
+    let mut stdout = std::io::stdout();
     loop {
         // Check for errors
         let n = match port.read(&mut buf) {
@@ -114,6 +115,6 @@ fn main() {
                 }
             }
         };
-        print!("{}", std::str::from_utf8(&buf[..n]).unwrap_or(""));
+        stdout.write_all(&buf[..n]).unwrap();
     }
 }
