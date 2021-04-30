@@ -47,7 +47,7 @@ fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
         }
         s.clear();
 
-        eprint!("Choose: ");
+        eprint!("Choose [0]: ");
         let _ = stdout().flush();
         match stdin().read_line(&mut s) {
             Ok(_n) => {}
@@ -55,6 +55,11 @@ fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
                 eprintln!("Error ({})", e);
                 continue;
             }
+        }
+
+        // if enter is given, the first element is chosen
+        if s.eq("\n") {
+            break ports[0].port_name.clone();
         }
 
         let i: usize = match s.trim_end().parse() {
