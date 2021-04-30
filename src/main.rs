@@ -6,10 +6,12 @@ extern crate clap;
 
 use std::io::{ErrorKind, Read};
 use clap::Clap;
-use serialport::SerialPortInfo;
+use serialport::{SerialPortInfo, SerialPort};
 use std::io::{stdin, stdout, Write};
+use std::thread::sleep;
+use std::time::Duration;
 
-#[derive(Clap)]
+#[derive(Clap, Debug)]
 #[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
 struct Opts {
     #[clap(short, long, default_value = "3000000")]
@@ -17,6 +19,9 @@ struct Opts {
 
     #[clap(short, long)]
     device: Option<String>,
+
+    #[clap(short, long)]
+    repeat: bool,
 }
 
 
@@ -78,9 +83,43 @@ fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
     }
 }
 
+fn connect_to_port(path: &str, baudrate: u32) -> Option<Box<dyn SerialPort>> {
+    match serialport::new(path, baudrate)
+        .timeout(std::time::Duration::from_secs_f32(2.0)).open()
+    {
+        Ok(p) => Some(p),
+        Err(e) => {
+            eprintln!("Error when connecting to \"{}\": {:?}", path, e);
+            None
+        }
+    }
+}
+
+fn start_terminal(mut port: Box<dyn SerialPort>) {
+    let mut buf = [0u8; 1024];
+    let mut stdout = std::io::stdout();
+    loop {
+        // Check for errors
+        let n = match port.read(&mut buf) {
+            Ok(n) => n,
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::InvalidData | ErrorKind::TimedOut => continue,
+                    kind => {
+                        eprintln!("can not read ({:?} - {})", kind, e);
+                        break;
+                    }
+                }
+            }
+        };
+        stdout.write_all(&buf[..n]).unwrap();
+    }
+}
 
 fn main() {
     let opts: Opts = Opts::parse();
+    /* ....[]< debug!("opts: {:?}", opts); >[].... */
+    dbg!("opts: {:?}", &opts);
 
     let ports = match serialport::available_ports() {
         Ok(ports) => ports,
@@ -97,29 +136,16 @@ fn main() {
 
     eprintln!("Device: {}", device);
 
-    let mut port = match serialport::new(&device, opts.baudrate as u32)
-        .timeout(std::time::Duration::from_secs_f32(2.0))
-        .open() {
-        Ok(p) => p,
-        Err(_e) => return
-    };
-
-    let mut buf = [0u8; 1024];
-    let mut stdout = std::io::stdout();
     loop {
-        // Check for errors
-        let n = match port.read(&mut buf) {
-            Ok(n) => n,
-            Err(e) => {
-                match e.kind() {
-                    ErrorKind::InvalidData | ErrorKind::TimedOut => continue,
-                    kind => {
-                        eprintln!("can not read ({:?} - {})", kind, e);
-                        return;
-                    }
-                }
-            }
-        };
-        stdout.write_all(&buf[..n]).unwrap();
+        if let Some(mut port) = connect_to_port(&device, opts.baudrate as u32) {
+            start_terminal(port);
+        }
+
+        if !opts.repeat {
+            return;
+        }
+
+        // Small sleep before connecting to port again
+        sleep(Duration::from_secs(1));
     }
 }
