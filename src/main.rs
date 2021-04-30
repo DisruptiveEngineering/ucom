@@ -53,13 +53,14 @@ impl std::io::Read for AsyncReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let mut n = 0;
         while let Ok(data) = self.rx.try_recv() {
-            n += 1;
-            if buf.len() > n {
+            if buf.len() > n + 1 {
                 buf[n] = data
             } else {
                 return Ok(n - 1);
             }
+            n += 1;
         }
+
         Ok(n)
     }
 }
@@ -168,9 +169,7 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
                     }
                 }
             }
-            Err(e) => {
-                eprintln!("can not read stdin ({})", e)
-            }
+            Err(e) => eprintln!("can not read stdin ({})", e),
         }
     }
 }
