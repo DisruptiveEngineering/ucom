@@ -176,8 +176,6 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
 
 fn main() {
     let opts: Opts = Opts::parse();
-    /* ....[]< debug!("opts: {:?}", opts); >[].... */
-    dbg!("opts: {:?}", &opts);
 
     let ports = match serialport::available_ports() {
         Ok(ports) => ports,
