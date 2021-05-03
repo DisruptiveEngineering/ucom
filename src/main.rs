@@ -126,7 +126,10 @@ fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
 }
 
 fn connect_to_port(path: &str, baudrate: u32) -> Option<Box<dyn SerialPort>> {
-    match serialport::new(path, baudrate).open() {
+    match serialport::new(path, baudrate)
+        .timeout(std::time::Duration::from_millis(10))
+        .open()
+    {
         Ok(p) => Some(p),
         Err(e) => {
             eprintln!("Error when connecting to \"{}\": {:?}", path, e);
@@ -171,6 +174,7 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
             }
             Err(e) => eprintln!("can not read stdin ({})", e),
         }
+        std::hint::spin_loop();
     }
 }
 
