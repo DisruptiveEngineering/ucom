@@ -15,15 +15,19 @@ use std::time::Duration;
 #[derive(Clap, Debug)]
 #[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
 struct Opts {
+    /// Serial baudrate
     #[clap(short, long, default_value = "3000000")]
     baudrate: usize,
 
+    /// Device identifier
     #[clap(short, long)]
     device: Option<String>,
 
+    /// Make the terminal reopen lost connections
     #[clap(short, long)]
     repeat: bool,
 
+    /// Lists all available serial devices
     #[clap(short, long)]
     list: bool,
 }
