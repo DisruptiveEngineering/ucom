@@ -23,6 +23,9 @@ struct Opts {
 
     #[clap(short, long)]
     repeat: bool,
+
+    #[clap(short, long)]
+    list: bool,
 }
 
 struct AsyncReader {
@@ -80,18 +83,22 @@ fn port_info(port: &SerialPortInfo) -> Option<String> {
     ))
 }
 
+/// Prints a list of all serial devices
+fn list_devices(ports: &Vec<SerialPortInfo>) {
+    for (i, port) in ports.iter().enumerate() {
+        let info = match port_info(&port) {
+            Some(info) => info,
+            None => continue,
+        };
+        eprintln!("({}) {}", i, info);
+    }
+}
+
 fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
     let mut s = String::new();
     loop {
         eprintln!("Select device:");
-        for (i, port) in ports.iter().enumerate() {
-            let info = match port_info(&port) {
-                Some(info) => info,
-                None => continue,
-            };
-
-            eprintln!("({}) {}", i, info);
-        }
+        list_devices(ports);
         s.clear();
 
         eprint!("Choose [0]: ");
@@ -188,6 +195,12 @@ fn main() {
             return;
         }
     };
+
+    // Just list all ports
+    if opts.list {
+        list_devices(&ports);
+        return;
+    }
 
     let device = match opts.device {
         Some(device) => device,
