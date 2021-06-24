@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate clap;
 
-use clap::Clap;
+use clap::{AppSettings, Clap};
 use serialport::{SerialPort, SerialPortInfo};
 use std::io::{stdin, stdout, Write};
 use std::io::{ErrorKind, Read};
@@ -13,7 +13,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 #[derive(Clap, Debug)]
-#[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
+#[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! (), setting = AppSettings::ColoredHelp)]
 struct Opts {
     /// Serial baudrate
     #[clap(short, long, default_value = "3000000")]
