@@ -5,7 +5,7 @@
 extern crate clap;
 
 use clap::{AppSettings, Clap};
-use serialport::{SerialPort, SerialPortInfo};
+use serialport::{SerialPort, SerialPortInfo, SerialPortType};
 use std::io::{stdin, stdout, Write};
 use std::io::{ErrorKind, Read};
 use std::sync::mpsc;
@@ -48,7 +48,7 @@ impl AsyncReader {
         loop {
             let n = reader.read(&mut buf)?;
             for byte in buf[..n].iter() {
-                if let Err(_) = tx.send(*byte) {
+                if tx.send(*byte).is_err() {
                     return Ok(());
                 };
             }
@@ -74,7 +74,7 @@ impl std::io::Read for AsyncReader {
 
 fn port_info(port: &SerialPortInfo) -> Option<String> {
     let port_info = match &port.port_type {
-        serialport::SerialPortType::UsbPort(port_info) => port_info,
+        SerialPortType::UsbPort(port_info) => port_info,
         _ => return None,
     };
 
@@ -88,17 +88,17 @@ fn port_info(port: &SerialPortInfo) -> Option<String> {
 }
 
 /// Prints a list of all serial devices
-fn list_devices(ports: &Vec<SerialPortInfo>) {
+fn list_devices(ports: &[SerialPortInfo]) {
     for (i, port) in ports.iter().enumerate() {
         let info = match port_info(&port) {
             Some(info) => info,
-            None => continue,
+            None => format!("{} - {:?}", port.port_name, port.port_type),
         };
         eprintln!("({}) {}", i, info);
     }
 }
 
-fn device_prompt(ports: &Vec<SerialPortInfo>) -> String {
+fn device_prompt(ports: &[SerialPortInfo]) -> String {
     let mut s = String::new();
     loop {
         eprintln!("Select device:");
@@ -149,6 +149,16 @@ fn connect_to_port(path: &str, baudrate: u32) -> Option<Box<dyn SerialPort>> {
     }
 }
 
+/// Find all USB devices
+fn find_devices() -> Vec<SerialPortInfo> {
+    let mut ports = match serialport::available_ports() {
+        Ok(ports) => ports,
+        Err(_e) => Vec::new(),
+    };
+    ports.retain(|port| matches!(&port.port_type, SerialPortType::UsbPort(_info)));
+    ports
+}
+
 fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R) {
     let mut buf = [0u8; 1024];
     let mut stdout = std::io::stdout();
@@ -192,13 +202,11 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
 fn main() {
     let opts: Opts = Opts::parse();
 
-    let ports = match serialport::available_ports() {
-        Ok(ports) => ports,
-        Err(_e) => {
-            eprintln!("No devices found.");
-            return;
-        }
-    };
+    let ports = find_devices();
+    if ports.is_empty() {
+        eprintln!("No devices found");
+        return;
+    }
 
     // Just list all ports
     if opts.list {
