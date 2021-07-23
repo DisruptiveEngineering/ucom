@@ -201,12 +201,7 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
 
 fn main() {
     let opts: Opts = Opts::parse();
-
     let ports = find_devices();
-    if ports.is_empty() {
-        eprintln!("No devices found");
-        return;
-    }
 
     // Just list all ports
     if opts.list {
@@ -216,7 +211,13 @@ fn main() {
 
     let device = match opts.device {
         Some(device) => device,
-        None => device_prompt(&ports),
+        None => {
+            if ports.is_empty() {
+                eprintln!("No devices found");
+                return;
+            }
+            device_prompt(&ports)
+        }
     };
 
     eprintln!("Device: {}", device);
@@ -231,7 +232,7 @@ fn main() {
             return;
         }
 
-        // Small sleep before connecting to port again
+        // Wait some time before reconnecting
         sleep(Duration::from_secs(1));
     }
 }
