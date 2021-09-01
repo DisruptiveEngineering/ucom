@@ -120,19 +120,22 @@ fn device_prompt(ports: &[SerialPortInfo]) -> String {
             break ports[0].port_name.clone();
         }
 
-        let i: usize = match s.trim_end().parse() {
+        let i: isize = match s.trim_end().parse() {
             Ok(i) => i,
             Err(_) => {
-                eprintln!("\"{}\" is not a valid integer", s);
+                eprintln!(
+                    "\"{}\" is not a valid integer",
+                    s.strip_suffix('\n').unwrap_or_default()
+                );
                 continue;
             }
         };
 
-        if i >= ports.len() - 1 {
+        if !(0 <= i && i < ports.len() as isize) {
             eprintln!("\"{}\" is out of range", i);
             continue;
         }
-        break ports[i].port_name.clone();
+        break ports[i as usize].port_name.clone();
     }
 }
 
