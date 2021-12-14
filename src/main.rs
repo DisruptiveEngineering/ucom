@@ -1,9 +1,3 @@
-//!
-//!
-
-// #[macro_use]
-// extern crate clap;
-
 use clap::{crate_authors, crate_description, crate_version, Parser};
 use serialport::{SerialPort, SerialPortInfo, SerialPortType};
 use std::io::{stdin, stdout, Write};
