@@ -1,10 +1,4 @@
-//!
-//!
-
-#[macro_use]
-extern crate clap;
-
-use clap::{AppSettings, Clap};
+use clap::{crate_authors, crate_description, crate_version, Parser};
 use serialport::{SerialPort, SerialPortInfo, SerialPortType};
 use std::io::{stdin, stdout, Write};
 use std::io::{ErrorKind, Read};
@@ -12,8 +6,8 @@ use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
 
-#[derive(Clap, Debug)]
-#[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! (), setting = AppSettings::ColoredHelp)]
+#[derive(Parser, Debug)]
+#[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
 struct Opts {
     /// Serial baudrate
     #[clap(short, long, default_value = "3000000")]
@@ -90,7 +84,7 @@ fn port_info(port: &SerialPortInfo) -> Option<String> {
 /// Prints a list of all serial devices
 fn list_devices(ports: &[SerialPortInfo]) {
     for (i, port) in ports.iter().enumerate() {
-        let info = match port_info(&port) {
+        let info = match port_info(port) {
             Some(info) => info,
             None => format!("{} - {:?}", port.port_name, port.port_type),
         };
