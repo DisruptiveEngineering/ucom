@@ -90,7 +90,7 @@ fn port_info(port: &SerialPortInfo) -> Option<String> {
 /// Prints a list of all serial devices
 fn list_devices(ports: &[SerialPortInfo]) {
     for (i, port) in ports.iter().enumerate() {
-        let info = match port_info(&port) {
+        let info = match port_info(port) {
             Some(info) => info,
             None => format!("{} - {:?}", port.port_name, port.port_type),
         };
