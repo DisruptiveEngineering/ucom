@@ -9,7 +9,7 @@ description = "A serial terminal."
 
 [dependencies]
 serialport = "4.0.1"
-clap = {version = "3.0.0-rc.4", features = ["derive", "cargo"]}
+clap = {version = "3.0.0-rc.9", features = ["derive", "cargo"]}
 
 [profile.release]
 opt-level = 3

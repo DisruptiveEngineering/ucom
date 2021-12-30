@@ -1,10 +1,10 @@
-use clap::{crate_authors, crate_description, crate_version, Parser};
-use serialport::{SerialPort, SerialPortInfo, SerialPortType};
-use std::io::{stdin, stdout, Write};
-use std::io::{ErrorKind, Read};
+use std::io::{stdin, stdout, ErrorKind, Read, Write};
 use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
+
+use clap::{crate_authors, crate_description, crate_version, Parser};
+use serialport::{SerialPort, SerialPortInfo, SerialPortType};
 
 #[derive(Parser, Debug)]
 #[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
