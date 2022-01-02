@@ -1,30 +1,11 @@
+mod opts;
+
 use std::io::{stdin, stdout, ErrorKind, Read, Write};
 use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
 
-use clap::{crate_authors, crate_description, crate_version, Parser};
 use serialport::{SerialPort, SerialPortInfo, SerialPortType};
-
-#[derive(Parser, Debug)]
-#[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
-struct Opts {
-    /// Serial baudrate
-    #[clap(short, long, default_value = "3000000")]
-    baudrate: usize,
-
-    /// Device identifier
-    #[clap(short, long)]
-    device: Option<String>,
-
-    /// Make the terminal reopen lost connections
-    #[clap(short, long)]
-    repeat: bool,
-
-    /// Lists all available serial devices
-    #[clap(short, long)]
-    list: bool,
-}
 
 struct AsyncReader {
     rx: mpsc::Receiver<u8>,
@@ -197,7 +178,7 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
 }
 
 fn main() {
-    let opts: Opts = Opts::parse();
+    let opts = opts::get_opts();
     let ports = find_devices();
 
     // Just list all ports
