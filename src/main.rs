@@ -148,7 +148,7 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
         let n = match port.read(&mut buf) {
             Ok(n) => n,
             Err(e) => match e.kind() {
-                ErrorKind::InvalidData | ErrorKind::TimedOut => continue,
+                ErrorKind::InvalidData | ErrorKind::TimedOut => 0,
                 kind => {
                     eprintln!("can not read ({:?} - {})", kind, e);
                     break;
@@ -161,15 +161,12 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
         match stdin.read(&mut buf) {
             Ok(n) => {
                 for byte in buf[..n].iter() {
-                    if byte == &b'\n' {
-                        if let Err(e) = port.write_all(&stdin_buf) {
-                            eprintln!("can not write to serial port ({})", e)
-                        }
-                        stdin_buf.clear();
-                    } else {
-                        stdin_buf.push(*byte);
-                    }
+                    stdin_buf.push(*byte);
                 }
+                if let Err(e) = port.write_all(&stdin_buf) {
+                    eprintln!("can not write to serial port ({})", e)
+                }
+                stdin_buf.clear();
             }
             Err(e) => eprintln!("can not read stdin ({})", e),
         }
