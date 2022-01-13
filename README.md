@@ -15,4 +15,4 @@ ZSH completions, symlink:
 
 Generate and install man page:
 
-    help2man ucom | gzip -c | sudo tee /usr/share/man/man1/ucom.1.gz
+    help2man ucom | gzip -c | sudo tee /usr/share/man/man1/ucom.1.gz > /dev/null

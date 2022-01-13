@@ -141,8 +141,6 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
     let mut buf = [0u8; 1024];
     let mut stdout = std::io::stdout();
 
-    let mut stdin_buf: Vec<u8> = Vec::with_capacity(1024);
-
     loop {
         // Check for errors
         let n = match port.read(&mut buf) {
@@ -160,13 +158,12 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
         // Read stdin
         match stdin.read(&mut buf) {
             Ok(n) => {
-                for byte in buf[..n].iter() {
-                    stdin_buf.push(*byte);
-                }
-                if let Err(e) = port.write_all(&stdin_buf) {
+                if let Err(e) = port.write(&buf[..n]) {
                     eprintln!("can not write to serial port ({})", e)
                 }
-                stdin_buf.clear();
+                if let Err(e) = port.flush() {
+                    eprintln!("can not flush serial port ({})", e)
+                }
             }
             Err(e) => eprintln!("can not read stdin ({})", e),
         }
