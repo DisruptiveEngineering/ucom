@@ -133,7 +133,12 @@ fn find_devices() -> Vec<SerialPortInfo> {
         Ok(ports) => ports,
         Err(_e) => Vec::new(),
     };
-    ports.retain(|port| matches!(&port.port_type, SerialPortType::UsbPort(_info)));
+    ports.retain(|port| {
+        matches!(
+            &port.port_type,
+            SerialPortType::UsbPort(_) | SerialPortType::PciPort
+        )
+    });
     ports
 }
 
