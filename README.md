@@ -4,12 +4,15 @@ Serial console written in rust
 
 ## Installation instructions
 
-1. Clone the repository, and enter it.
-2. Build and install binaries (eg. `cargo install --path .` to install it in `~/.cargo/bin/`)
+1. Run the following command:
+```bash
+cargo install --git https://github.com/DisruptiveEngineering/ucom
+```
 
 ### Optionally copy completions and generate man pages:
+Clone the repository, and enter it.
  
-ZSH completions, symlink:
+Installing the ZSH completions with symlink:
 
     sudo ln -s $(pwd)/target/release/completions/zsh/_ucom /usr/share/zsh/site-functions/_ucom
 
