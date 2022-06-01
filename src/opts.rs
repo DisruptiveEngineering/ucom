@@ -22,6 +22,10 @@ pub struct Opts {
     /// Log content to file
     #[clap(short, long)]
     pub outfile: Option<String>,
+
+    /// Prefix filename with timestamp of program start
+    #[clap(long)]
+    pub prefix_filename_with_timestamp: bool,
 }
 
 pub fn get_opts() -> Opts {

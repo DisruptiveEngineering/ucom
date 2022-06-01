@@ -142,7 +142,11 @@ fn find_devices() -> Vec<SerialPortInfo> {
     ports
 }
 
-fn start_terminal<R: Read>(mut port: Box<dyn SerialPort>, stdin: &mut R, outputs: &mut [Box<dyn Write>]) {
+fn start_terminal<R: Read>(
+    mut port: Box<dyn SerialPort>,
+    stdin: &mut R,
+    outputs: &mut [Box<dyn Write>],
+) {
     let mut buf = [0u8; 1024];
 
     loop {
@@ -188,6 +192,45 @@ fn main() {
         return;
     }
 
+    let mut outputs: Vec<Box<dyn Write>> = vec![Box::new(stdout())];
+
+    if let Some(filename) = opts.outfile {
+        let path = std::path::Path::new(&filename);
+        let parent = path.parent().unwrap();
+        if let Err(e) = std::fs::create_dir_all(parent) {
+            panic!("could not create parent directories for file {}", e);
+        }
+
+        let filename = match opts.prefix_filename_with_timestamp {
+            true => {
+                format!(
+                    "{}_{}",
+                    chrono::offset::Local::now()
+                        .naive_local()
+                        .format("%Y-%m-%d-%H%M%S"),
+                    path.file_name()
+                        .expect("filename formatted wrong")
+                        .to_str()
+                        .unwrap()
+                )
+            }
+            false => filename.clone(),
+        };
+        let file = parent.join(filename);
+        match std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&file)
+        {
+            Ok(file) => {
+                outputs.push(Box::new(file));
+            }
+            Err(e) => {
+                eprintln!("got error [{}] when creating file [{:?}]", e, file)
+            }
+        }
+    }
+
     let device = match opts.device {
         Some(device) => device,
         None => {
@@ -198,18 +241,6 @@ fn main() {
             device_prompt(&ports)
         }
     };
-    let mut outputs: Vec<Box<dyn Write>> = vec![Box::new(stdout())];
-
-    if let Some(filename) = opts.outfile {
-        let file = match std::fs::File::open(&filename) {
-            Ok(file) => file,
-            Err(e) => {
-                eprintln!("error when opening file: {}", e);
-                std::fs::File::create(&filename).unwrap()
-            }
-        };
-        outputs.push(Box::new(file));
-    }
 
     eprintln!("Device: {}", device);
     let mut stdin = AsyncReader::new(stdin());
