@@ -12,13 +12,13 @@ struct AsyncReader {
 }
 
 impl AsyncReader {
-    fn new<R: 'static + std::io::Read + Send>(reader: R) -> Self {
+    fn new<R: 'static + Read + Send>(reader: R) -> Self {
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(|| Self::start_reader(reader, tx));
         Self { rx }
     }
 
-    fn start_reader<R: std::io::Read>(mut reader: R, tx: mpsc::Sender<u8>) -> std::io::Result<()> {
+    fn start_reader<R: Read>(mut reader: R, tx: mpsc::Sender<u8>) -> std::io::Result<()> {
         let mut buf = [0u8; 1024];
         loop {
             let n = reader.read(&mut buf)?;
@@ -31,7 +31,7 @@ impl AsyncReader {
     }
 }
 
-impl std::io::Read for AsyncReader {
+impl Read for AsyncReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let mut n = 0;
         while let Ok(data) = self.rx.try_recv() {
@@ -116,7 +116,7 @@ fn device_prompt(ports: &[SerialPortInfo]) -> String {
 
 fn connect_to_port(path: &str, baudrate: u32) -> Option<Box<dyn SerialPort>> {
     match serialport::new(path, baudrate)
-        .timeout(std::time::Duration::from_millis(10))
+        .timeout(Duration::from_millis(10))
         .open()
     {
         Ok(p) => Some(p),
@@ -142,9 +142,8 @@ fn find_devices() -> Vec<SerialPortInfo> {
     ports
 }
 
-fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R) {
+fn start_terminal<R: Read>(mut port: Box<dyn SerialPort>, stdin: &mut R, outputs: &mut [Box<dyn Write>]) {
     let mut buf = [0u8; 1024];
-    let mut stdout = std::io::stdout();
 
     loop {
         // Check for errors
@@ -158,7 +157,10 @@ fn start_terminal<R: std::io::Read>(mut port: Box<dyn SerialPort>, stdin: &mut R
                 }
             },
         };
-        stdout.write_all(&buf[..n]).unwrap();
+
+        for out in outputs.iter_mut() {
+            out.write_all(&buf[..n]).unwrap();
+        }
 
         // Read stdin
         match stdin.read(&mut buf) {
@@ -196,13 +198,25 @@ fn main() {
             device_prompt(&ports)
         }
     };
+    let mut outputs: Vec<Box<dyn Write>> = vec![Box::new(stdout())];
+
+    if let Some(filename) = opts.outfile {
+        let file = match std::fs::File::open(&filename) {
+            Ok(file) => file,
+            Err(e) => {
+                eprintln!("error when opening file: {}", e);
+                std::fs::File::create(&filename).unwrap()
+            }
+        };
+        outputs.push(Box::new(file));
+    }
 
     eprintln!("Device: {}", device);
-    let mut stdin = AsyncReader::new(std::io::stdin());
+    let mut stdin = AsyncReader::new(stdin());
 
     loop {
         if let Some(port) = connect_to_port(&device, opts.baudrate as u32) {
-            start_terminal(port, &mut stdin);
+            start_terminal(port, &mut stdin, outputs.as_mut_slice());
         }
 
         if !opts.repeat {

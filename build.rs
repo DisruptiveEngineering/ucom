@@ -7,7 +7,7 @@ mod opts;
 
 fn main() {
     // Generate shell completions
-    let mut app = opts::Opts::into_app();
+    let mut app = opts::Opts::command();
     let bin_name: String = app.get_name().to_string();
 
     let comp_path = std::path::PathBuf::from("target")

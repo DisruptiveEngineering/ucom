@@ -1,6 +1,6 @@
 [package]
 name = "ucom"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Sander <sander.wittwer@dengineering.no>", "Balder <balder.klanderud@dengineering.no>"]
 edition = "2021"
 description = "A serial terminal."

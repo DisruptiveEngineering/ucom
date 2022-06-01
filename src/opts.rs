@@ -18,6 +18,10 @@ pub struct Opts {
     /// Lists all available serial devices
     #[clap(short, long)]
     pub list: bool,
+
+    /// Log content to file
+    #[clap(short, long)]
+    pub outfile: Option<String>,
 }
 
 pub fn get_opts() -> Opts {
