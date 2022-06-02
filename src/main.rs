@@ -146,8 +146,10 @@ fn start_terminal<R: Read>(
     mut port: Box<dyn SerialPort>,
     stdin: &mut R,
     outputs: &mut [Box<dyn Write>],
+    opts: &opts::Opts,
 ) {
     let mut buf = [0u8; 1024];
+    let mut out_buf: Vec<u8> = Vec::with_capacity(buf.len());
 
     loop {
         // Check for errors
@@ -162,8 +164,21 @@ fn start_terminal<R: Read>(
             },
         };
 
+        // Format output
+        out_buf.clear();
+        for byte in &buf[..n] {
+            out_buf.push(*byte);
+
+            // Add timestamp if configured
+            if byte == &b'\n' && opts.timestamp {
+                let now = chrono::offset::Local::now().format("%Y-%m-%dT%H:%M:%S%.3f%:z");
+                out_buf.extend_from_slice(format!("[{}] ", now).as_bytes());
+            }
+        }
+
+        // Write to outputs
         for out in outputs.iter_mut() {
-            out.write_all(&buf[..n]).unwrap();
+            out.write_all(&out_buf).unwrap();
         }
 
         // Read stdin
@@ -196,7 +211,7 @@ fn main() {
     // defaults to only stdout
     let mut outputs: Vec<Box<dyn Write>> = vec![Box::new(stdout())];
 
-    if let Some(filepath) = opts.outfile {
+    if let Some(filepath) = opts.outfile.as_ref() {
         let path = std::path::Path::new(&filepath);
         let parent = path.parent().unwrap();
 
@@ -239,8 +254,8 @@ fn main() {
         }
     }
 
-    let device = match opts.device {
-        Some(device) => device,
+    let device = match opts.device.as_ref() {
+        Some(device) => device.clone(),
         None => {
             if ports.is_empty() {
                 eprintln!("No devices found");
@@ -255,7 +270,7 @@ fn main() {
 
     loop {
         if let Some(port) = connect_to_port(&device, opts.baudrate as u32) {
-            start_terminal(port, &mut stdin, outputs.as_mut_slice());
+            start_terminal(port, &mut stdin, outputs.as_mut_slice(), &opts);
         }
 
         if !opts.repeat {

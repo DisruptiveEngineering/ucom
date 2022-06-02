@@ -19,6 +19,10 @@ pub struct Opts {
     #[clap(short, long)]
     pub list: bool,
 
+    /// Add timestamp to the output margin
+    #[clap(short, long)]
+    pub timestamp: bool,
+
     /// Log content to file
     #[clap(short, long)]
     pub outfile: Option<String>,
