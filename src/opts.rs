@@ -18,6 +18,14 @@ pub struct Opts {
     /// Lists all available serial devices
     #[clap(short, long)]
     pub list: bool,
+
+    /// Log content to file
+    #[clap(short, long)]
+    pub outfile: Option<String>,
+
+    /// Prefix filename with timestamp of program start
+    #[clap(long)]
+    pub prefix_filename_with_timestamp: bool,
 }
 
 pub fn get_opts() -> Opts {
