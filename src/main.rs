@@ -192,37 +192,45 @@ fn main() {
         return;
     }
 
+    // Create a vector of all endpoints that is to receive serial data
+    // defaults to only stdout
     let mut outputs: Vec<Box<dyn Write>> = vec![Box::new(stdout())];
 
-    if let Some(filename) = opts.outfile {
-        let path = std::path::Path::new(&filename);
+    if let Some(filepath) = opts.outfile {
+        let path = std::path::Path::new(&filepath);
         let parent = path.parent().unwrap();
+
+        // create parent directories if not exists
         if let Err(e) = std::fs::create_dir_all(parent) {
             panic!("could not create parent directories for file {}", e);
         }
 
-        let filename = match opts.prefix_filename_with_timestamp {
-            true => {
-                format!(
-                    "{}_{}",
-                    chrono::offset::Local::now()
-                        .naive_local()
-                        .format("%Y-%m-%d-%H%M%S"),
-                    path.file_name()
-                        .expect("filename formatted wrong")
-                        .to_str()
-                        .unwrap()
-                )
-            }
-            false => filename.clone(),
-        };
+        let mut filename = String::from(
+            path.file_name()
+                .expect("filename formatted wrong")
+                .to_string_lossy(),
+        );
+
+        // Check if filename is to be prefixed with timestamp
+        if opts.prefix_filename_with_timestamp {
+            filename = format!(
+                "{}_{}",
+                chrono::offset::Local::now()
+                    .naive_local()
+                    .format("%Y-%m-%d-%H%M%S"),
+                filename
+            );
+        }
+
         let file = parent.join(filename);
+        // open or create file
         match std::fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(&file)
         {
             Ok(file) => {
+                // add file to outputs vector
                 outputs.push(Box::new(file));
             }
             Err(e) => {
