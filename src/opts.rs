@@ -27,6 +27,10 @@ pub struct Opts {
     #[clap(short, long)]
     pub outfile: Option<String>,
 
+    /// Log content to file
+    #[clap(long)]
+    pub regex_match: Option<String>,
+
     /// Prefix filename with timestamp of program start
     #[clap(long)]
     pub prefix_filename_with_timestamp: bool,
