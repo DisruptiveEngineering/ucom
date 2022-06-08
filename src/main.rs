@@ -6,7 +6,7 @@ use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
 
-use crate::wrappers::{RegexWrapper, TimestampWrapper};
+use crate::wrappers::{RegexWrapper, RegexWrapperModes, TimestampWrapper, WrapperBuilder};
 use serialport::{SerialPort, SerialPortInfo, SerialPortType};
 
 struct AsyncReader {
@@ -254,17 +254,18 @@ fn main() {
     }
 
     if opts.timestamp {
-        drains = drains
-            .into_iter()
-            .map(|out| Box::new(TimestampWrapper::new(out)) as Box<dyn Write>)
-            .collect();
+        let w = TimestampWrapper;
+        drains = drains.into_iter().map(|out| w.wrap(out)).collect();
+    }
+
+    if let Some(re) = &opts.regex_filter {
+        let wb = RegexWrapper::new(re, RegexWrapperModes::Filter);
+        drains = drains.into_iter().map(|out| wb.wrap(out)).collect();
     }
 
     if let Some(re) = &opts.regex_match {
-        drains = drains
-            .into_iter()
-            .map(|out| Box::new(RegexWrapper::new(re, out)) as Box<dyn Write>)
-            .collect();
+        let wb = RegexWrapper::new(re, RegexWrapperModes::Match);
+        drains = drains.into_iter().map(|out| wb.wrap(out)).collect();
     }
 
     eprintln!("Device: {}", device);

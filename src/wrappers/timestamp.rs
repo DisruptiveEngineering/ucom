@@ -1,11 +1,23 @@
+use crate::WrapperBuilder;
 use std::io::Write;
 
-pub struct TimestampWrapper {
+pub struct TimestampWrapper;
+
+impl WrapperBuilder for TimestampWrapper {
+    fn wrap(&self, drain: Box<dyn Write>) -> Box<dyn Write> {
+        Box::new(Wrapper {
+            out: drain,
+            buffer: Vec::new(),
+        })
+    }
+}
+
+struct Wrapper {
     pub out: Box<dyn Write>,
     pub buffer: Vec<u8>,
 }
 
-impl Write for TimestampWrapper {
+impl Write for Wrapper {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.buffer.clear();
         for byte in buf {
@@ -25,14 +37,5 @@ impl Write for TimestampWrapper {
 
     fn flush(&mut self) -> std::io::Result<()> {
         self.out.flush()
-    }
-}
-
-impl TimestampWrapper {
-    pub fn new(out: Box<dyn Write>) -> Self {
-        Self {
-            out,
-            buffer: Vec::new(),
-        }
     }
 }
