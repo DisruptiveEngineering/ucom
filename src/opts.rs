@@ -27,6 +27,14 @@ pub struct Opts {
     #[clap(short, long)]
     pub outfile: Option<String>,
 
+    /// Print line if regex gets match
+    #[clap(long)]
+    pub regex_match: Option<String>,
+
+    /// Filter line if regex gets match
+    #[clap(long)]
+    pub regex_filter: Option<String>,
+
     /// Prefix filename with timestamp of program start
     #[clap(long)]
     pub prefix_filename_with_timestamp: bool,
