@@ -5,6 +5,8 @@ use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
 
+use opts::FlushOpts;
+
 use serialport::{SerialPort, SerialPortInfo, SerialPortType};
 
 struct AsyncReader {
@@ -179,6 +181,10 @@ fn start_terminal<R: Read>(
         // Write to outputs
         for out in outputs.iter_mut() {
             out.write_all(&out_buf).unwrap();
+
+            if let FlushOpts::Always = opts.flush {
+                out.flush().unwrap();
+            }
         }
 
         // Read stdin
