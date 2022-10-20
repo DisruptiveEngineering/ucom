@@ -1,4 +1,4 @@
-use clap::{crate_authors, crate_description, crate_version, Parser};
+use clap::Parser;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, clap::ValueEnum)]
 pub enum FlushOpt {
@@ -11,46 +11,46 @@ pub enum FlushOpt {
 }
 
 #[derive(Parser, Debug)]
-#[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
+#[command(version, author, about)]
 pub struct Opts {
     /// Serial baudrate
-    #[clap(short, long, default_value_t = 115_200)]
+    #[arg(short, long, default_value_t = 115_200)]
     pub baudrate: usize,
 
     /// Device identifier
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub device: Option<String>,
 
     /// Make the terminal reopen lost connections
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub repeat: bool,
 
     /// Lists all available serial devices
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub list: bool,
 
     /// Add timestamp to the output margin
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub timestamp: bool,
 
     /// Log content to file
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub outfile: Option<String>,
 
     /// Print line if regex gets match
-    #[clap(long)]
+    #[arg(long)]
     pub regex_match: Option<String>,
 
     /// Filter line if regex gets match
-    #[clap(long)]
+    #[arg(long)]
     pub regex_filter: Option<String>,
 
     /// Prefix filename with timestamp of program start
-    #[clap(long, default_value_t = true)]
+    #[arg(long, default_value_t = true)]
     pub prefix_filename_with_timestamp: bool,
 
     /// If set, ucom will force flush the output drains whenever there is data
-    #[clap(value_enum, short, long, default_value_t = FlushOpt::Always)]
+    #[arg(value_enum, short, long, default_value_t = FlushOpt::Always)]
     pub flush: FlushOpt,
 }
 
