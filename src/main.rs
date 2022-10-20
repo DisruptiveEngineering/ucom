@@ -1,11 +1,13 @@
 mod opts;
+mod wrappers;
 
 use std::io::{stdin, stdout, ErrorKind, Read, Write};
 use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
 
-use opts::FlushOpts;
+use opts::FlushOpt;
+use wrappers::{RegexWrapper, RegexWrapperModes, TimestampWrapper, WrapperBuilder};
 
 use serialport::{SerialPort, SerialPortInfo, SerialPortType};
 
@@ -147,11 +149,10 @@ fn find_devices() -> Vec<SerialPortInfo> {
 fn start_terminal<R: Read>(
     mut port: Box<dyn SerialPort>,
     stdin: &mut R,
-    outputs: &mut [Box<dyn Write>],
-    opts: &opts::Opts,
+    drains: &mut [Box<dyn Write>],
+    flush_opt: &FlushOpt,
 ) {
     let mut buf = [0u8; 1024];
-    let mut out_buf: Vec<u8> = Vec::with_capacity(buf.len());
 
     loop {
         // Check for errors
@@ -166,24 +167,12 @@ fn start_terminal<R: Read>(
             },
         };
 
-        // Format output
-        out_buf.clear();
-        for byte in &buf[..n] {
-            out_buf.push(*byte);
+        // Write to drains
+        for out in drains.iter_mut() {
+            out.write_all(&buf[..n]).unwrap();
 
-            // Add timestamp if configured
-            if byte == &b'\n' && opts.timestamp {
-                let now = chrono::offset::Local::now().format("%Y-%m-%dT%H:%M:%S%.3f%:z");
-                out_buf.extend_from_slice(format!("[{}] ", now).as_bytes());
-            }
-        }
-
-        // Write to outputs
-        for out in outputs.iter_mut() {
-            out.write_all(&out_buf).unwrap();
-
-            if let FlushOpts::Always = opts.flush {
-                out.flush().unwrap();
+            if &FlushOpt::Always == flush_opt {
+                out.flush().unwrap()
             }
         }
 
@@ -215,7 +204,18 @@ fn main() {
 
     // Create a vector of all endpoints that is to receive serial data
     // defaults to only stdout
-    let mut outputs: Vec<Box<dyn Write>> = vec![Box::new(stdout())];
+    let mut drains: Vec<Box<dyn Write>> = vec![Box::new(stdout())];
+
+    let device = match opts.device.as_ref() {
+        Some(device) => device.clone(),
+        None => {
+            if ports.is_empty() {
+                eprintln!("No devices found");
+                return;
+            }
+            device_prompt(&ports)
+        }
+    };
 
     if let Some(filepath) = opts.outfile.as_ref() {
         let path = std::path::Path::new(&filepath);
@@ -251,8 +251,8 @@ fn main() {
             .open(&file)
         {
             Ok(file) => {
-                // add file to outputs vector
-                outputs.push(Box::new(file));
+                // add file to drains vector
+                drains.push(Box::new(file));
             }
             Err(e) => {
                 eprintln!("got error [{}] when creating file [{:?}]", e, file)
@@ -260,23 +260,27 @@ fn main() {
         }
     }
 
-    let device = match opts.device.as_ref() {
-        Some(device) => device.clone(),
-        None => {
-            if ports.is_empty() {
-                eprintln!("No devices found");
-                return;
-            }
-            device_prompt(&ports)
-        }
-    };
+    if opts.timestamp {
+        let w = TimestampWrapper;
+        drains = drains.into_iter().map(|out| w.wrap(out)).collect();
+    }
+
+    if let Some(re) = &opts.regex_filter {
+        let wb = RegexWrapper::new(re, RegexWrapperModes::Filter);
+        drains = drains.into_iter().map(|out| wb.wrap(out)).collect();
+    }
+
+    if let Some(re) = &opts.regex_match {
+        let wb = RegexWrapper::new(re, RegexWrapperModes::Match);
+        drains = drains.into_iter().map(|out| wb.wrap(out)).collect();
+    }
 
     eprintln!("Device: {}", device);
     let mut stdin = AsyncReader::new(stdin());
 
     loop {
         if let Some(port) = connect_to_port(&device, opts.baudrate as u32) {
-            start_terminal(port, &mut stdin, outputs.as_mut_slice(), &opts);
+            start_terminal(port, &mut stdin, drains.as_mut_slice(), &opts.flush);
         }
 
         if !opts.repeat {
