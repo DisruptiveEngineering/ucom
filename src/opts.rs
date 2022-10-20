@@ -1,5 +1,15 @@
 use clap::{crate_authors, crate_description, crate_version, Parser};
 
+#[derive(Default, Debug, Clone, clap::ValueEnum)]
+pub enum FlushOpts {
+    /// Do not flush, relies on external reader (ie terminal emulator)
+    Never,
+
+    /// Will always flush after data is written to the output drains
+    #[default]
+    Always,
+}
+
 #[derive(Parser, Debug)]
 #[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
 pub struct Opts {
@@ -38,6 +48,10 @@ pub struct Opts {
     /// Prefix filename with timestamp of program start
     #[clap(long)]
     pub prefix_filename_with_timestamp: bool,
+
+    /// If set, ucom will force flush the output drains whenever there is data
+    #[clap(value_enum, short, long, default_value_t = FlushOpts::Always)]
+    pub flush: FlushOpts,
 }
 
 pub fn get_opts() -> Opts {

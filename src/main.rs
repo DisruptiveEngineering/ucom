@@ -6,7 +6,9 @@ use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
 
-use crate::wrappers::{RegexWrapper, RegexWrapperModes, TimestampWrapper, WrapperBuilder};
+use opts::FlushOpts;
+use wrappers::{RegexWrapper, RegexWrapperModes, TimestampWrapper, WrapperBuilder};
+
 use serialport::{SerialPort, SerialPortInfo, SerialPortType};
 
 struct AsyncReader {
