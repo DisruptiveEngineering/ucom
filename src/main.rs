@@ -171,7 +171,7 @@ fn start_terminal<R: Read>(
         for out in drains.iter_mut() {
             out.write_all(&buf[..n]).unwrap();
 
-            if FlushOpt::Always == flush_opt {
+            if &FlushOpt::Always == flush_opt {
                 out.flush().unwrap()
             }
         }

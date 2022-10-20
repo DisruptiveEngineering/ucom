@@ -8,6 +8,7 @@ impl WrapperBuilder for TimestampWrapper {
         Box::new(Wrapper {
             out: drain,
             buffer: Vec::new(),
+            nl: false,
         })
     }
 }
@@ -15,20 +16,25 @@ impl WrapperBuilder for TimestampWrapper {
 struct Wrapper {
     pub out: Box<dyn Write>,
     pub buffer: Vec<u8>,
+    pub nl: bool,
 }
 
 impl Write for Wrapper {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.buffer.clear();
         for byte in buf {
-            self.buffer.push(*byte);
-
-            // Add timestamp
-            if byte == &b'\n' {
+            // Add timestamp if previous write contained a newline
+            if self.nl {
+                self.nl = false;
                 let now = chrono::offset::Local::now().format("%Y-%m-%dT%H:%M:%S%.3f%:z");
-                self.buffer
-                    .extend_from_slice(format!("[{}] ", now).as_bytes());
+                self.buffer.extend_from_slice(format!("[{}] ", now).as_bytes());
             }
+
+            if byte == &b'\n' {
+                self.nl = true;
+            }
+
+            self.buffer.push(*byte);
         }
         self.out.write_all(self.buffer.as_slice())?;
 
