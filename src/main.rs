@@ -6,7 +6,7 @@ use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
 
-use opts::FlushOpts;
+use opts::FlushOpt;
 use wrappers::{RegexWrapper, RegexWrapperModes, TimestampWrapper, WrapperBuilder};
 
 use serialport::{SerialPort, SerialPortInfo, SerialPortType};
@@ -150,6 +150,7 @@ fn start_terminal<R: Read>(
     mut port: Box<dyn SerialPort>,
     stdin: &mut R,
     drains: &mut [Box<dyn Write>],
+    flush_opt: &FlushOpt,
 ) {
     let mut buf = [0u8; 1024];
 
@@ -169,6 +170,10 @@ fn start_terminal<R: Read>(
         // Write to drains
         for out in drains.iter_mut() {
             out.write_all(&buf[..n]).unwrap();
+
+            if FlushOpt::Always == flush_opt {
+                out.flush().unwrap()
+            }
         }
 
         // Read stdin
@@ -275,7 +280,7 @@ fn main() {
 
     loop {
         if let Some(port) = connect_to_port(&device, opts.baudrate as u32) {
-            start_terminal(port, &mut stdin, drains.as_mut_slice());
+            start_terminal(port, &mut stdin, drains.as_mut_slice(), &opts.flush);
         }
 
         if !opts.repeat {
