@@ -1,4 +1,4 @@
-use clap::{ArgEnum, IntoApp};
+use clap::{CommandFactory, ValueEnum};
 use clap_complete::{generate_to, Shell};
 
 #[path = "src/opts.rs"]
