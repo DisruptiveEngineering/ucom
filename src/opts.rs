@@ -14,7 +14,7 @@ pub enum FlushOpt {
 #[clap(version = crate_version ! (), author = crate_authors ! (), about = crate_description ! ())]
 pub struct Opts {
     /// Serial baudrate
-    #[clap(short, long, default_value = "115200")]
+    #[clap(short, long, default_value_t = 115_200)]
     pub baudrate: usize,
 
     /// Device identifier
@@ -46,7 +46,7 @@ pub struct Opts {
     pub regex_filter: Option<String>,
 
     /// Prefix filename with timestamp of program start
-    #[clap(long)]
+    #[clap(long, default_value_t = true)]
     pub prefix_filename_with_timestamp: bool,
 
     /// If set, ucom will force flush the output drains whenever there is data
